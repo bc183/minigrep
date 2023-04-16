@@ -1,4 +1,4 @@
-use std::{error::Error, fs, path::Path};
+use std::{env, error::Error, fs, path::Path};
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(config.path)?;
@@ -18,55 +18,62 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub struct Config<'a> {
-    pub path: &'a Path,
+pub struct Config {
+    pub path: String,
     pub query: String,
     pub case_sensitive: bool,
 }
 
-impl<'a> Config<'a> {
-    pub fn new(args: &Vec<String>) -> Result<Config, &str> {
-        if args.len() != 4 {
-            return Err("Arguments must be path query case_sensitive");
-        }
-        let path = Path::new(&args[1]);
-        let case_sensitive = args[3].clone();
-        let case_sensitive = case_sensitive.as_str();
-        Ok(Config {
-            path,
-            query: args[2].clone(),
-            case_sensitive: match case_sensitive {
+impl Config {
+    pub fn new(mut args: env::Args) -> Result<Config, &'static str> {
+        args.next();
+        let path = match args.next() {
+            Some(p) => p,
+            None => return Err("Path must be specified"),
+        };
+        let query = match args.next() {
+            Some(q) => q,
+            None => return Err("Query must be specified"),
+        };
+        let case_sensitive = match args.next() {
+            Some(q) => match q.as_str() {
                 "true" => true,
                 "false" => false,
                 _ => false,
             },
+            None => false,
+        };
+        Ok(Config {
+            path,
+            query,
+            case_sensitive,
         })
     }
 
     pub fn path_exists(&self) -> bool {
-        return self.path.exists();
+        Path::new(&self.path).exists()
     }
 }
 
 pub fn search<'a>(search: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
-    let mut result: Vec<(usize, &'a str)> = Vec::new();
-    for (idx, line) in contents.lines().into_iter().enumerate() {
-        if line.contains(&search) {
-            result.push((idx + 1, line));
-        }
-    }
-    result
+    contents
+        .lines()
+        .into_iter()
+        .enumerate()
+        .filter(|(_, line)| line.contains(&search))
+        .map(|(idx, line)| (idx + 1, line))
+        .collect()
 }
 
 pub fn isearch<'a>(search: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
     let search = search.to_lowercase();
-    let mut result: Vec<(usize, &'a str)> = Vec::new();
-    for (idx, line) in contents.lines().into_iter().enumerate() {
-        if line.to_lowercase().contains(&search) {
-            result.push((idx + 1, line));
-        }
-    }
-    result
+    contents
+        .lines()
+        .into_iter()
+        .enumerate()
+        .filter(|(_, line)| line.to_lowercase().contains(&search))
+        .map(|(idx, line)| (idx + 1, line))
+        .collect()
 }
 
 #[cfg(test)]
