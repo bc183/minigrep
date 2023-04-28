@@ -9,7 +9,6 @@ pub fn run(config: Config) -> Result<(), &'static str> {
     println!("Results");
     if config.is_dir {
         let files_to_search = populate_files_to_search(&config.query, &config.path);
-        println!("{:?}", &files_to_search);
         for file in files_to_search {
             let contents = match fs::read_to_string(file.path()) {
                 Ok(val) => val,
