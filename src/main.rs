@@ -9,7 +9,7 @@ fn main() {
     });
 
     println!("Searching for {:?}", config.query);
-    println!("In file {:?}", config.path);
+    println!("In {:?}", config.path);
 
     if !config.path_exists() {
         println!("The file does not exist");
